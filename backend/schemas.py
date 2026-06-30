@@ -4,6 +4,7 @@ from typing import List, Optional
 class SearchRequest(BaseModel):
     query: str = Field(..., min_length=1)
     top_k: int = Field(default=5, ge=1, le=10)
+    filename: Optional[str] = None
 
 class SearchResult(BaseModel):
     filename: str
@@ -28,6 +29,7 @@ class UploadResponse(BaseModel):
 class AskRequest(BaseModel):
     question: str = Field(..., min_length=1)
     top_k: int = Field(default=5, ge=1, le=10)
+    filename: Optional[str] = None
 
 class Citation(BaseModel):
     filename: str

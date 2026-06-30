@@ -208,18 +208,30 @@ async def search(
     search to retrieve the top-k relevant PDF chunks.
     """
     # 1. Pre-search document count check
-    count_stmt = select(func.count(Document.id))
-    result = await db.execute(count_stmt)
-    count = result.scalar()
-    
-    if count == 0:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "status": "failed",
-                "reason": "No documents have been indexed yet. Please upload a PDF first."
-            }
-        )
+    if request.filename:
+        count_stmt = select(func.count(Document.id)).where(Document.filename == request.filename)
+        result = await db.execute(count_stmt)
+        count = result.scalar()
+        if count == 0:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "failed",
+                    "reason": "No indexed chunks found for this document."
+                }
+            )
+    else:
+        count_stmt = select(func.count(Document.id))
+        result = await db.execute(count_stmt)
+        count = result.scalar()
+        if count == 0:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "failed",
+                    "reason": "No documents have been indexed yet. Please upload a PDF first."
+                }
+            )
         
     # 2. Embed the query text
     query_vector = EmbeddingEngine.get_instance().embed_text(request.query)
@@ -228,17 +240,16 @@ async def search(
     similarity_expr = 1 - Document.embedding.cosine_distance(query_vector)
     
     # 4. Perform vector search order by cosine distance ascending
-    stmt = (
-        select(
-            Document.filename,
-            Document.page_number,
-            Document.chunk_index,
-            Document.chunk_text,
-            similarity_expr.label("similarity")
-        )
-        .order_by(Document.embedding.cosine_distance(query_vector))
-        .limit(request.top_k)
+    stmt = select(
+        Document.filename,
+        Document.page_number,
+        Document.chunk_index,
+        Document.chunk_text,
+        similarity_expr.label("similarity")
     )
+    if request.filename:
+        stmt = stmt.where(Document.filename == request.filename)
+    stmt = stmt.order_by(Document.embedding.cosine_distance(query_vector)).limit(request.top_k)
     
     res = await db.execute(stmt)
     rows = res.all()
@@ -271,18 +282,30 @@ async def ask_question(
     answer with citations using OpenAI.
     """
     # 1. Document presence check
-    count_stmt = select(func.count(Document.id))
-    result = await db.execute(count_stmt)
-    count = result.scalar()
-    
-    if count == 0:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "status": "failed",
-                "reason": "No documents have been indexed yet. Please upload a PDF first."
-            }
-        )
+    if request.filename:
+        count_stmt = select(func.count(Document.id)).where(Document.filename == request.filename)
+        result = await db.execute(count_stmt)
+        count = result.scalar()
+        if count == 0:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "failed",
+                    "reason": "No indexed chunks found for this document."
+                }
+            )
+    else:
+        count_stmt = select(func.count(Document.id))
+        result = await db.execute(count_stmt)
+        count = result.scalar()
+        if count == 0:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "failed",
+                    "reason": "No documents have been indexed yet. Please upload a PDF first."
+                }
+            )
         
     # 2. Check if OPENAI_API_KEY is configured
     if not settings.openai_api_key or not settings.openai_api_key.strip():
@@ -298,17 +321,16 @@ async def ask_question(
     query_vector = EmbeddingEngine.get_instance().embed_text(request.question)
     similarity_expr = 1 - Document.embedding.cosine_distance(query_vector)
     
-    stmt = (
-        select(
-            Document.filename,
-            Document.page_number,
-            Document.chunk_index,
-            Document.chunk_text,
-            similarity_expr.label("similarity")
-        )
-        .order_by(Document.embedding.cosine_distance(query_vector))
-        .limit(request.top_k)
+    stmt = select(
+        Document.filename,
+        Document.page_number,
+        Document.chunk_index,
+        Document.chunk_text,
+        similarity_expr.label("similarity")
     )
+    if request.filename:
+        stmt = stmt.where(Document.filename == request.filename)
+    stmt = stmt.order_by(Document.embedding.cosine_distance(query_vector)).limit(request.top_k)
     
     res = await db.execute(stmt)
     rows = res.all()

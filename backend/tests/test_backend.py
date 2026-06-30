@@ -253,3 +253,141 @@ def test_ask_handles_missing_openai_key():
     assert "OPENAI_API_KEY is not configured" in response.json()["reason"]
     
     app.dependency_overrides.clear()
+
+@patch("config.settings.api_key", "test-key")
+def test_search_with_filename_filter_sql():
+    """
+    Verify that when filename is provided to /search, the database query
+    filters results by filename.
+    """
+    mock_session = MagicMock()
+    captured_stmts = []
+    
+    mock_count_result = MagicMock()
+    mock_count_result.scalar.return_value = 1 # Chunks exist
+    
+    mock_search_result = MagicMock()
+    mock_row = MagicMock()
+    mock_row.filename = "policy.pdf"
+    mock_row.page_number = 3
+    mock_row.chunk_index = 2
+    mock_row.chunk_text = "refund policy content"
+    mock_row.similarity = 0.95
+    mock_search_result.all.return_value = [mock_row]
+    
+    async def mock_execute(stmt, *args, **kwargs):
+        captured_stmts.append(stmt)
+        if len(captured_stmts) == 1:
+            return mock_count_result
+        return mock_search_result
+        
+    mock_session.execute = mock_execute
+    app.dependency_overrides[get_db] = lambda: mock_session
+    
+    response = client.post(
+        "/search",
+        json={"query": "refund policy", "top_k": 3, "filename": "policy.pdf"},
+        headers={"x-api-key": "test-key"}
+    )
+    
+    assert response.status_code == 200
+    assert len(captured_stmts) == 2
+    
+    # Verify the second statement (search query) filters by filename
+    search_stmt_str = str(captured_stmts[1])
+    assert "documents.filename =" in search_stmt_str
+    
+    app.dependency_overrides.clear()
+
+@patch("config.settings.api_key", "test-key")
+def test_search_without_filename_global_sql():
+    """
+    Verify that when filename is omitted or null, the database search query
+    does NOT filter by filename (global search).
+    """
+    mock_session = MagicMock()
+    captured_stmts = []
+    
+    mock_count_result = MagicMock()
+    mock_count_result.scalar.return_value = 1
+    
+    mock_search_result = MagicMock()
+    mock_search_result.all.return_value = []
+    
+    async def mock_execute(stmt, *args, **kwargs):
+        captured_stmts.append(stmt)
+        if len(captured_stmts) == 1:
+            return mock_count_result
+        return mock_search_result
+        
+    mock_session.execute = mock_execute
+    app.dependency_overrides[get_db] = lambda: mock_session
+    
+    response = client.post(
+        "/search",
+        json={"query": "refund policy", "top_k": 3, "filename": None},
+        headers={"x-api-key": "test-key"}
+    )
+    
+    assert response.status_code == 200
+    assert len(captured_stmts) == 2
+    
+    # Verify the search query statement does NOT contain the filename filter
+    search_stmt_str = str(captured_stmts[1])
+    assert "documents.filename =" not in search_stmt_str
+    
+    app.dependency_overrides.clear()
+
+@patch("config.settings.openai_api_key", "mock-key")
+@patch("config.settings.api_key", "test-key")
+@patch("openai.resources.chat.completions.Completions.create")
+def test_ask_passes_filename_filter_to_retrieval(mock_openai_create):
+    """
+    Verify that when filename is provided to /ask, the database query
+    filters the retrieved chunks by filename.
+    """
+    mock_session = MagicMock()
+    captured_stmts = []
+    
+    mock_count_result = MagicMock()
+    mock_count_result.scalar.return_value = 1
+    
+    mock_search_result = MagicMock()
+    mock_row = MagicMock()
+    mock_row.filename = "policy.pdf"
+    mock_row.page_number = 3
+    mock_row.chunk_index = 2
+    mock_row.chunk_text = "refund policy content"
+    mock_row.similarity = 0.95
+    mock_search_result.all.return_value = [mock_row]
+    
+    async def mock_execute(stmt, *args, **kwargs):
+        captured_stmts.append(stmt)
+        if len(captured_stmts) == 1:
+            return mock_count_result
+        return mock_search_result
+        
+    mock_session.execute = mock_execute
+    app.dependency_overrides[get_db] = lambda: mock_session
+    
+    # Mock OpenAI
+    mock_response = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.message.content = "Answer content."
+    mock_response.choices = [mock_choice]
+    mock_openai_create.return_value = mock_response
+    
+    response = client.post(
+        "/ask",
+        json={"question": "What is the policy?", "top_k": 3, "filename": "policy.pdf"},
+        headers={"x-api-key": "test-key"}
+    )
+    
+    assert response.status_code == 200
+    assert len(captured_stmts) == 2
+    
+    # Verify the retrieval query statement filters by filename
+    search_stmt_str = str(captured_stmts[1])
+    assert "documents.filename =" in search_stmt_str
+    
+    app.dependency_overrides.clear()

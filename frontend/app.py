@@ -70,6 +70,7 @@ if uploaded_file is not None:
                 response = requests.post(f"{BACKEND_URL}/upload", files=files, headers=headers)
                 if response.status_code == 200:
                     data = response.json()
+                    st.session_state["current_filename"] = data.get("filename", uploaded_file.name)
                     st.success(f"🎉 Success! {data.get('message', 'PDF processed successfully.')} "
                                f"Stored {data.get('chunks_stored', 0)} chunks from {data.get('pages_processed', 0)} pages.")
                 else:
@@ -88,6 +89,32 @@ if uploaded_file is not None:
 
 st.divider()
 
+# Initialize session state for filename if not present
+if "current_filename" not in st.session_state:
+    st.session_state["current_filename"] = None
+
+# Search Scope Configuration
+st.subheader("2. Search Configuration")
+scope_options = ["Current uploaded document only", "All indexed documents"]
+selected_scope = st.radio(
+    "Search Scope:",
+    options=scope_options,
+    index=0,
+    horizontal=True
+)
+
+active_filename = None
+if selected_scope == "Current uploaded document only":
+    active_filename = st.session_state["current_filename"]
+    if active_filename:
+        st.info(f"🔍 Searching in: **{active_filename}**")
+    else:
+        st.warning("⚠️ No document uploaded yet. Scoping search to 'All indexed documents' instead.")
+else:
+    st.info("🔍 Searching in: **all indexed documents**")
+
+st.divider()
+
 # Create Tabs
 tab1, tab2 = st.tabs(["Semantic Search", "Ask with AI"])
 
@@ -103,7 +130,8 @@ with tab1:
             with st.spinner("Searching semantic index..."):
                 payload = {
                     "query": query,
-                    "top_k": top_k
+                    "top_k": top_k,
+                    "filename": active_filename
                 }
                 try:
                     response = requests.post(f"{BACKEND_URL}/search", json=payload, headers=headers)
@@ -148,7 +176,8 @@ with tab2:
             with st.spinner("Generating grounded answer..."):
                 payload = {
                     "question": question,
-                    "top_k": rag_top_k
+                    "top_k": rag_top_k,
+                    "filename": active_filename
                 }
                 try:
                     response = requests.post(f"{BACKEND_URL}/ask", json=payload, headers=headers)

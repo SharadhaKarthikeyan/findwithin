@@ -210,11 +210,14 @@ FindWithin can optionally generate cohesive answers using retrieved PDF chunks a
 
 If no OpenAI API key is configured, semantic search still works and the Ask with AI interface returns a clear, helpful message informing the user that RAG answer generation requires the key.
 
+## Search Scope (Document Filtering)
+By default, FindWithin scopes queries to the **currently uploaded document only** to provide a targeted context. Users can switch the scope to **all indexed documents** globally via the radio selectors on the Streamlit dashboard. This scoping filter applies to both the **Semantic Search** and **Ask with AI (RAG)** features. When the `filename` parameter is omitted or set to null, the API automatically falls back to global search across all documents to preserve backward compatibility.
+
 ## Future Improvements
 *   **OCR Engine Integration**: Incorporate an OCR framework (like Tesseract) to parse text from scanned images.
-*   **Search Filters**: Add options to filter results by filename, dates, or page numbers.
 *   **Index Administration**: Add deletion routes to let users purge specific documents.
 
 ---
 
+---
 **Author: Sharadha Karthikeyan**
