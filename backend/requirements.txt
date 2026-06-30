@@ -14,3 +14,4 @@ pytest-asyncio
 greenlet
 numpy
 requests
+openai>=1.0.0

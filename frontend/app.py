@@ -88,47 +88,94 @@ if uploaded_file is not None:
 
 st.divider()
 
-# Search Section
-st.subheader("2. Search inside your documents")
-query = st.text_input("Enter natural language query:", placeholder="e.g. What is the refund policy?")
-top_k = st.selectbox("Top Results (K)", options=[3, 5, 10], index=1)
+# Create Tabs
+tab1, tab2 = st.tabs(["Semantic Search", "Ask with AI"])
 
-if st.button("Search Index", use_container_width=True):
-    if not query.strip():
-        st.warning("Search query cannot be empty.")
-    else:
-        with st.spinner("Searching semantic index..."):
-            payload = {
-                "query": query,
-                "top_k": top_k
-            }
-            try:
-                response = requests.post(f"{BACKEND_URL}/search", json=payload, headers=headers)
-                if response.status_code == 200:
-                    data = response.json()
-                    results = data.get("results", [])
-                    if not results:
-                        st.info("No matching passages found.")
-                    else:
-                        st.write(f"Showing top {len(results)} relevant passages:")
-                        for idx, result in enumerate(results):
-                            st.markdown(f"""
-                            <div class="result-card">
-                                <div class="result-header">
-                                    <span><strong>Result {idx + 1}</strong> | Source: <i>{result['filename']}</i> (Page {result['page_number']})</span>
-                                    <span class="result-score">Similarity: {result['similarity']:.4f}</span>
-                                </div>
-                                <p style="margin: 0; font-size: 0.95rem; color: #1f2937; line-height: 1.5;">
-                                    "{result['chunk_text']}"
-                                </p>
-                            </div>
-                            """, unsafe_allow_html=True)
-                else:
-                    try:
+with tab1:
+    st.subheader("Search inside your documents")
+    query = st.text_input("Enter natural language query:", placeholder="e.g. What is the refund policy?", key="search_query")
+    top_k = st.selectbox("Top Results (K)", options=[3, 5, 10], index=1, key="search_top_k")
+
+    if st.button("Search Index", use_container_width=True, key="search_btn"):
+        if not query.strip():
+            st.warning("Search query cannot be empty.")
+        else:
+            with st.spinner("Searching semantic index..."):
+                payload = {
+                    "query": query,
+                    "top_k": top_k
+                }
+                try:
+                    response = requests.post(f"{BACKEND_URL}/search", json=payload, headers=headers)
+                    if response.status_code == 200:
                         data = response.json()
-                        reason = data.get("reason", "Unknown error")
-                    except Exception:
-                        reason = response.text
-                    st.error(f"Search failed: {reason}")
-            except Exception as e:
-                st.error(f"Could not connect to backend service at {BACKEND_URL}: {str(e)}")
+                        results = data.get("results", [])
+                        if not results:
+                            st.info("No matching passages found.")
+                        else:
+                            st.write(f"Showing top {len(results)} relevant passages:")
+                            for idx, result in enumerate(results):
+                                st.markdown(f"""
+                                <div class="result-card">
+                                    <div class="result-header">
+                                        <span><strong>Result {idx + 1}</strong> | Source: <i>{result['filename']}</i> (Page {result['page_number']})</span>
+                                        <span class="result-score">Similarity: {result['similarity']:.4f}</span>
+                                    </div>
+                                    <p style="margin: 0; font-size: 0.95rem; color: #1f2937; line-height: 1.5;">
+                                        "{result['chunk_text']}"
+                                    </p>
+                                </div>
+                                """, unsafe_allow_html=True)
+                    else:
+                        try:
+                            data = response.json()
+                            reason = data.get("reason", "Unknown error")
+                        except Exception:
+                            reason = response.text
+                        st.error(f"Search failed: {reason}")
+                except Exception as e:
+                    st.error(f"Could not connect to backend service at {BACKEND_URL}: {str(e)}")
+
+with tab2:
+    st.subheader("Ask questions with AI (RAG)")
+    question = st.text_input("Enter your question:", placeholder="e.g. What is the refund policy?", key="ask_question_input")
+    rag_top_k = st.selectbox("Context window chunks (K)", options=[3, 5, 10], index=1, key="ask_top_k")
+
+    if st.button("Ask with AI", use_container_width=True, key="ask_btn"):
+        if not question.strip():
+            st.warning("Question cannot be empty.")
+        else:
+            with st.spinner("Generating grounded answer..."):
+                payload = {
+                    "question": question,
+                    "top_k": rag_top_k
+                }
+                try:
+                    response = requests.post(f"{BACKEND_URL}/ask", json=payload, headers=headers)
+                    if response.status_code == 200:
+                        data = response.json()
+                        answer = data.get("answer", "")
+                        citations = data.get("citations", [])
+
+                        st.markdown("### Answer")
+                        st.write(answer)
+
+                        if citations:
+                            st.markdown("### Sources")
+                            for idx, citation in enumerate(citations):
+                                st.markdown(
+                                    f"{idx + 1}. {citation['filename']} — Page {citation['page_number']} — Similarity: {citation['similarity']:.2f}"
+                                )
+                    else:
+                        try:
+                            data = response.json()
+                            reason = data.get("reason", "Unknown error")
+                        except Exception:
+                            reason = response.text
+                        
+                        if "openai_api_key is not configured" in reason.lower() or "api key is not configured" in reason.lower():
+                            st.warning("RAG answer generation requires OPENAI_API_KEY. Semantic search is still available.")
+                        else:
+                            st.error(f"Failed to generate answer: {reason}")
+                except Exception as e:
+                    st.error(f"Could not connect to backend service at {BACKEND_URL}: {str(e)}")

@@ -19,7 +19,7 @@ docker-compose exec backend python benchmarks/benchmark_search_latency.py
 - **PDF Filename**: `benchmark_20p.pdf`
 - **Pages**: 20
 - **Chunks generated**: 20
-- **Total Ingestion Time**: 0.1995 seconds
+- **Full ingestion pipeline processed 20 pages in 0.1995 seconds.**
 - **Pages/sec**: 100.26
 - **Chunks/sec**: 100.26
 - **Embeddings/sec**: 100.26

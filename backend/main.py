@@ -12,10 +12,11 @@ from sqlalchemy import select, func, delete
 
 from config import settings
 from database import get_db, Document
-from schemas import SearchRequest, SearchResponse, SearchResult, UploadResponse
+from schemas import SearchRequest, SearchResponse, SearchResult, UploadResponse, AskRequest, AskResponse, Citation
 from pdf_processor import extract_pdf_pages
 from chunker import chunk_page
 from embedding import EmbeddingEngine
+from rag import generate_rag_answer
 
 API_KEY_HEADER = APIKeyHeader(name="x-api-key", auto_error=False)
 
@@ -62,6 +63,14 @@ async def validation_exception_handler(request, exc: RequestValidationError):
                 content={
                     "status": "failed",
                     "reason": "Search query cannot be empty."
+                }
+            )
+        if "question" in loc:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "failed",
+                    "reason": "Question cannot be empty."
                 }
             )
         if "top_k" in loc:
@@ -248,4 +257,102 @@ async def search(
         query=request.query,
         top_k=request.top_k,
         results=results
+    )
+
+@app.post("/ask", response_model=AskResponse)
+async def ask_question(
+    request: AskRequest,
+    db: AsyncSession = Depends(get_db),
+    api_key: str = Depends(verify_api_key)
+):
+    """
+    Accepts a natural language question, retrieves the top-k relevant PDF chunks
+    using pgvector semantic search, builds context, and generates a grounded
+    answer with citations using OpenAI.
+    """
+    # 1. Document presence check
+    count_stmt = select(func.count(Document.id))
+    result = await db.execute(count_stmt)
+    count = result.scalar()
+    
+    if count == 0:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "failed",
+                "reason": "No documents have been indexed yet. Please upload a PDF first."
+            }
+        )
+        
+    # 2. Check if OPENAI_API_KEY is configured
+    if not settings.openai_api_key or not settings.openai_api_key.strip():
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "failed",
+                "reason": "OPENAI_API_KEY is not configured. Semantic search is still available, but RAG answer generation requires an LLM API key."
+            }
+        )
+        
+    # 3. Retrieve top-k chunks using existing vector search
+    query_vector = EmbeddingEngine.get_instance().embed_text(request.question)
+    similarity_expr = 1 - Document.embedding.cosine_distance(query_vector)
+    
+    stmt = (
+        select(
+            Document.filename,
+            Document.page_number,
+            Document.chunk_index,
+            Document.chunk_text,
+            similarity_expr.label("similarity")
+        )
+        .order_by(Document.embedding.cosine_distance(query_vector))
+        .limit(request.top_k)
+    )
+    
+    res = await db.execute(stmt)
+    rows = res.all()
+    
+    if not rows:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "failed",
+                "reason": "No relevant context chunks found in the database."
+            }
+        )
+        
+    # 4. Format context chunks and prepare citations
+    chunks_dict_list = []
+    citations = []
+    for row in rows:
+        chunks_dict_list.append({
+            "filename": row.filename,
+            "page_number": row.page_number,
+            "chunk_index": row.chunk_index,
+            "chunk_text": row.chunk_text
+        })
+        citations.append(Citation(
+            filename=row.filename,
+            page_number=row.page_number,
+            chunk_index=row.chunk_index,
+            similarity=float(row.similarity)
+        ))
+        
+    # 5. Call LLM to generate answer
+    try:
+        answer = generate_rag_answer(request.question, chunks_dict_list)
+    except Exception as e:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "failed",
+                "reason": f"Failed to generate answer from LLM: {str(e)}"
+            }
+        )
+        
+    return AskResponse(
+        question=request.question,
+        answer=answer,
+        citations=citations
     )

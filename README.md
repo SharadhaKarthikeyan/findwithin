@@ -117,6 +117,7 @@ FindWithin/
 ### Prerequisites
 *   Docker and Docker Compose installed.
 *   Python 3.11 (if running tests and benchmarks locally on the host).
+*   **OpenAI API Key (Optional)**: Required only for the "Ask with AI" RAG feature. Semantic search functions without it.
 
 ### Setup and Deployment
 1.  **Build and launch the containers**:
@@ -128,7 +129,14 @@ FindWithin/
     *   Streamlit UI: [http://localhost:8501](http://localhost:8501)
     *   FastAPI docs: [http://localhost:8000/docs](http://localhost:8000/docs)
     *   PostgreSQL: `localhost:5432`
-3.  **API Authorization**: Ensure you set the `x-api-key` header to the key defined in your `.env` (default is `change-me`).
+3.  **API Authorization & LLM Settings**: Ensure you set the `x-api-key` header to the key defined in your `.env` (default is `change-me`).
+    To enable the RAG Q&A feature, specify these keys in your `.env`:
+    ```env
+    OPENAI_API_KEY=your-api-key-here
+    LLM_MODEL=gpt-4o-mini
+    RAG_TOP_K=5
+    ```
+    *Note: The OpenAI API key is optional. It is only required for the Ask with AI feature. Semantic search works without it.*
 
 ### Running Tests
 To run unit tests inside the backend container:
@@ -169,7 +177,7 @@ docker-compose exec backend python benchmarks/benchmark_search_latency.py
 
 ## Demo
 
-![FindWithin Demo](assets/findwithin-demo.gif)
+![FindWithin Demo](assets/findwithin-demo.webp)
 
 > The demo GIF should show uploading a PDF, successful ingestion, searching a natural language query, and viewing source-aware results.
 
@@ -197,8 +205,12 @@ FindWithin handles error states gracefully and returns clear messaging:
 *   **Text-Based PDFs Only**: FindWithin v1 extracts digital text only. Document scans, images, or protected PDF files without embedded texts will trigger the scanned PDF error message.
 *   **Memory-Bound ML Model**: Embedding generation runs locally inside the container on CPUs. High concurrency workloads might hit CPU bottlenecks.
 
+## Version 2: RAG With Citations
+FindWithin can optionally generate cohesive answers using retrieved PDF chunks as context. The answers include source citations citing the filename and page number. 
+
+If no OpenAI API key is configured, semantic search still works and the Ask with AI interface returns a clear, helpful message informing the user that RAG answer generation requires the key.
+
 ## Future Improvements
-*   **RAG with Citations**: Connect the vector search retrieval phase to an LLM (e.g. Gemini) to generate conversational answers with inline citations.
 *   **OCR Engine Integration**: Incorporate an OCR framework (like Tesseract) to parse text from scanned images.
 *   **Search Filters**: Add options to filter results by filename, dates, or page numbers.
 *   **Index Administration**: Add deletion routes to let users purge specific documents.
@@ -214,6 +226,7 @@ FindWithin handles error states gracefully and returns clear messaging:
 > - Built benchmarking scripts to measure ingestion speed, search latency at 100/500/1000 chunks, and Recall@3 using a 20-query evaluation set.
 > - Created a Streamlit frontend for PDF upload, query input, top-k selection, similarity score display, and source-aware results with filename and page number.
 > - Containerized the app using Docker Compose with pgvector/pgvector:pg16, DB healthcheck, pre-downloaded embedding model cached at a stable path, and environment variable injection via env_file.
+> - Extended the semantic search pipeline with an optional RAG question-answering endpoint that generates grounded answers from retrieved PDF chunks and returns filename/page citations.
 
 ---
 **Author: Sharadha Karthikeyan**

@@ -24,3 +24,18 @@ class UploadResponse(BaseModel):
     chunks_stored: Optional[int] = None
     message: Optional[str] = None
     reason: Optional[str] = None
+
+class AskRequest(BaseModel):
+    question: str = Field(..., min_length=1)
+    top_k: int = Field(default=5, ge=1, le=10)
+
+class Citation(BaseModel):
+    filename: str
+    page_number: int
+    chunk_index: int
+    similarity: float
+
+class AskResponse(BaseModel):
+    question: str
+    answer: str
+    citations: List[Citation]
