@@ -1,0 +1,102 @@
+[
+  {
+    "query": "What is the refund policy?",
+    "expected_page": 3,
+    "expected_keywords": ["refund", "reimbursement", "30 days"]
+  },
+  {
+    "query": "Who is eligible to apply?",
+    "expected_page": 5,
+    "expected_keywords": ["eligible", "requirements", "application"]
+  },
+  {
+    "query": "How do I request a deletion of my personal data?",
+    "expected_page": 8,
+    "expected_keywords": ["delete", "personal data", "removal", "privacy"]
+  },
+  {
+    "query": "What is the policy on intellectual property?",
+    "expected_page": 12,
+    "expected_keywords": ["intellectual property", "IP", "copyright", "ownership"]
+  },
+  {
+    "query": "What are the working hours and remote options?",
+    "expected_page": 2,
+    "expected_keywords": ["remote", "working hours", "flexible", "telecommuting"]
+  },
+  {
+    "query": "How do I submit an expense report?",
+    "expected_page": 6,
+    "expected_keywords": ["expense report", "reimburse", "submit", "receipt"]
+  },
+  {
+    "query": "What is the termination notice period?",
+    "expected_page": 15,
+    "expected_keywords": ["notice period", "termination", "resignation", "weeks"]
+  },
+  {
+    "query": "How is user account security enforced?",
+    "expected_page": 9,
+    "expected_keywords": ["security", "encryption", "password", "MFA"]
+  },
+  {
+    "query": "Are there maternity or paternity leave benefits?",
+    "expected_page": 4,
+    "expected_keywords": ["maternity", "paternity", "parental leave", "benefits"]
+  },
+  {
+    "query": "How does the company handle conflict of interest?",
+    "expected_page": 11,
+    "expected_keywords": ["conflict of interest", "ethics", "disclosure", "integrity"]
+  },
+  {
+    "query": "What is the annual carry-over limit for paid time off?",
+    "expected_page": 4,
+    "expected_keywords": ["carry-over", "PTO", "paid time off", "vacation"]
+  },
+  {
+    "query": "What are the sanctions for violating the code of conduct?",
+    "expected_page": 10,
+    "expected_keywords": ["violation", "sanction", "disciplinary", "conduct"]
+  },
+  {
+    "query": "Who should be contacted in case of a data breach?",
+    "expected_page": 9,
+    "expected_keywords": ["data breach", "incident response", "security officer", "notify"]
+  },
+  {
+    "query": "What is the maximum limit for business gift acceptance?",
+    "expected_page": 11,
+    "expected_keywords": ["gift", "limit", "bribery", "hospitality"]
+  },
+  {
+    "query": "How do I enroll in the company health insurance plan?",
+    "expected_page": 7,
+    "expected_keywords": ["enroll", "health insurance", "benefits", "coverage"]
+  },
+  {
+    "query": "Are performance reviews conducted annually or semi-annually?",
+    "expected_page": 13,
+    "expected_keywords": ["performance review", "feedback", "evaluation", "annual"]
+  },
+  {
+    "query": "What is the policy regarding personal device usage for work?",
+    "expected_page": 8,
+    "expected_keywords": ["BYOD", "personal device", "mobile", "security policy"]
+  },
+  {
+    "query": "How can an employee report harassment or discrimination?",
+    "expected_page": 10,
+    "expected_keywords": ["report", "harassment", "discrimination", "HR", "anonymous"]
+  },
+  {
+    "query": "What are the rules concerning social media usage as an employee?",
+    "expected_page": 14,
+    "expected_keywords": ["social media", "public relations", "posting", "guidelines"]
+  },
+  {
+    "query": "What training programs are available for professional development?",
+    "expected_page": 13,
+    "expected_keywords": ["training", "professional development", "education", "reimbursement"]
+  }
+]
