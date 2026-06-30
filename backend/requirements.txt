@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+python-multipart
+pymupdf
+sentence-transformers
+transformers
+sqlalchemy
+asyncpg
+pgvector
+pydantic
+pydantic-settings
+pytest
+pytest-asyncio
+greenlet
+numpy
+requests
