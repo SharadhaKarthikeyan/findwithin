@@ -217,16 +217,4 @@ If no OpenAI API key is configured, semantic search still works and the Ask with
 
 ---
 
-## Resume Bullet
-> **FindWithin: AI-Powered PDF Semantic Search Engine | FastAPI, PostgreSQL, pgvector, Streamlit, Docker, Sentence Transformers**
-> - Built a full-stack semantic search engine that allows users to upload PDFs and retrieve meaning-based passages using natural language queries.
-> - Developed a FastAPI ingestion pipeline with PyMuPDF text extraction, scanned-PDF detection, per-page token-based chunking, local Sentence Transformer embeddings, and PostgreSQL metadata storage.
-> - Implemented async PostgreSQL operations with SQLAlchemy async and asyncpg, and pgvector cosine similarity search with an HNSW index for scalable document retrieval.
-> - Created Pydantic request/response schemas to validate search inputs, standardize API responses, and improve FastAPI Swagger documentation.
-> - Built benchmarking scripts to measure ingestion speed, search latency at 100/500/1000 chunks, and Recall@3 using a 20-query evaluation set.
-> - Created a Streamlit frontend for PDF upload, query input, top-k selection, similarity score display, and source-aware results with filename and page number.
-> - Containerized the app using Docker Compose with pgvector/pgvector:pg16, DB healthcheck, pre-downloaded embedding model cached at a stable path, and environment variable injection via env_file.
-> - Extended the semantic search pipeline with an optional RAG question-answering endpoint that generates grounded answers from retrieved PDF chunks and returns filename/page citations.
-
----
 **Author: Sharadha Karthikeyan**
